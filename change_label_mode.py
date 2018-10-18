@@ -9,6 +9,12 @@ test commit
 
 
 def get_all_files(dir_name):
+    """
+
+    :param dir_name:
+    :return: all_labelsp[file_0,file_1,   ]
+    file_n = ['classes, location', file_path, bounding_box_num ]
+    """
     label_path = dir_name
     all_labels = []
 
@@ -34,6 +40,11 @@ def get_all_files(dir_name):
 
 
 def prase_label(label):
+    """
+
+    :param label: coming form function:'get_all_files'
+    :return: every file's bounding box and file name
+    """
     # for label in labels
     # class_id =
     boundingbox_num = label[-1]
@@ -48,6 +59,13 @@ def prase_label(label):
 
 
 def boundingbox_location_change(boundingbox, file_name, dir):
+    """
+    change(centure_x, centure_y ,width, hight) to mode (x_min ,y_min, x_max, y_max)
+    :param boundingbox:
+    :param file_name:
+    :param dir:
+    :return:
+    """
     root = dir
     jpgfile = file_name[0:-3]+'jpg'
     img = cv2.imread(root+jpgfile)
