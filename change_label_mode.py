@@ -4,8 +4,7 @@ import cv2
 import shutil
 import numpy as np
 """
-f.readline 每次只读取一行数据,生成字符串
-f.readlines 读取所有数据 ,生成列表
+
 """
 
 
