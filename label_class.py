@@ -1,6 +1,8 @@
 import os
 import cv2
 import xml.dom.minidom
+import numpy as np
+
 
 class Dataset(object):
     def __init__(self, source_image_dir, source_label_dir, dest_label_dir=None):
@@ -13,6 +15,10 @@ class Dataset(object):
 
 
     def txt2voc(self):
+        """
+        txt label change to xml label
+        :return:
+        """
         label_files =  os.listdir(self.source_label_dir)
 
         for label_file in label_files:
@@ -30,7 +36,7 @@ class Dataset(object):
         get all_objects in a image
         and generate a dict
         :param label_file_path:
-        :return:
+        :return:[dict1, dict2, dicti]
         """
         object_list = []
 
@@ -47,6 +53,39 @@ class Dataset(object):
                     object_dict['object_class'] = object_class
                     object_list.append(object_dict)
         return object_list
+
+    def change_object_list_to_np(self, object_list):
+        object_array = []
+        for b in object_list:
+            evey_box = [int(xy) for xy in b['object_box']] + [int(b['obect_class'])]
+            object_array.append(evey_box)
+        object_np = np.array(object_array)
+        return object_np
+
+    def crop_image_and_bbox(self, image_name, width, height, overlap):
+        image_path = os.path.join(self.source_image_dir, image_name)
+        image_np = cv2.imread(image_path)
+        image_shape= image_np.shape
+        image_height = image_shape[0]
+        image_width = image_shape[1]
+        sub_image_step = weight - overlap
+
+        for start_h in range(0, image_height, sub_image_step):
+            for start_w in range(0, image_width, sub_image_step):
+
+                start_h_new = start_h
+                start_w_new = start_w
+                if start_h + height > image_height:
+                    start_h_new = image_height - height
+                if start_w + width > image_width:
+                    start_w_new = image_width - width
+                top_left_row = max(start_h_new, 0)
+                top_left_col = max(start_w_new, 0)
+                bottom_right_row = min(start_h + height, shape[0])
+                bottom_right_col = min(start_w + width, shape[1])
+                subImage = image_np[top_left_row:bottom_right_row, top_left_col: bottom_right_col]
+
+
 
     def creat_xml(self, xml_file_name, object_list):
         xml_file_path = os.path.join(self.dest_label_dir, xml_file_name)
@@ -159,9 +198,16 @@ class Dataset(object):
         with open(xml_file_path, 'wb') as xf:
             doc.writexml(xf, indent='\t', addindent='\t', newl='\n', encoding="utf-8")
 
-if __name__ =='__main__':
+def main():
     source_image_dir = '/home/zoucg/new_disk/cv_project/tensorflow_project/R2CNN_Faster-RCNN_Tensorflow/dataset/DOTA/train/images'
     source_label_dir = '/home/zoucg/new_disk/cv_project/tensorflow_project/R2CNN_Faster-RCNN_Tensorflow/dataset/DOTA/train/labelTxt'
     Dota = Dataset(source_image_dir, source_label_dir, './Annotation2')
     Dota.txt2voc()
+
+if __name__ =='__main__':
+    print(cv2.imread('./1033536313.jpg').shape)
+    cla = ['124', 'sddd']
+    print(cla.index('124'))
+    cla.append(['1244']+['33'])
+    print(cla)
 
