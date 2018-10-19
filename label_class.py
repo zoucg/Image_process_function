@@ -2,6 +2,7 @@ import os
 import cv2
 import xml.dom.minidom
 import numpy as np
+import copy
 
 
 class Dataset(object):
@@ -12,6 +13,31 @@ class Dataset(object):
         self.source_image_dir = source_image_dir
         self.source_label_dir = source_label_dir
         self.dest_label_dir = dest_label_dir
+        self.class_list = ['plane', 'baseball-diamond', 'bridge', 'ground-track-field',
+                           'small-vehicle', 'large-vehicle', 'ship', 'tennis-court',
+                           'basketball-court',  'storage-tank', 'soccer-ball-field',
+                           'roundabout', 'harbor', 'swimming-pool', 'helicopter']
+
+    def crop(self, new_image_dir, new_voc_dir):
+        if os.path.exists(new_image_dir) is False:
+            os.makedirs(new_image_dir)
+
+        if os.path.exists(new_voc_dir) is False:
+            os.makedirs(new_voc_dir)
+
+        images = os.listdir(self.source_image_dir)
+        images = [image for image in images if image.endswith('png')]
+        flag = 0
+        for im in images:
+            print im
+            flag += 1
+            if flag >20:
+                break
+            print('crop{}'.format(im))
+            label_path = os.path.join(self.source_label_dir, im[:-3]+'txt')
+            object_list = self.get_label(label_path)
+            self.crop_image_and_bbox(im, 1024, 1024, 256, object_list, new_image_dir, new_voc_dir)
+
 
 
     def txt2voc(self):
@@ -28,8 +54,6 @@ class Dataset(object):
                 object_list = self.get_label(label_file_path)
                 xml_file_name = label_file[:-3] + 'xml'
                 self.creat_xml(xml_file_name, object_list)
-
-
 
     def get_label(self, label_file_path):
         """
@@ -54,21 +78,36 @@ class Dataset(object):
                     object_list.append(object_dict)
         return object_list
 
-    def change_object_list_to_np(self, object_list):
+    def change_object_list_to_np_array(self, object_list):
         object_array = []
         for b in object_list:
-            evey_box = [int(xy) for xy in b['object_box']] + [int(b['obect_class'])]
+            evey_box = [int(xy) for xy in b['object_box']] + [int(b['object_class'])]
             object_array.append(evey_box)
         object_np = np.array(object_array)
         return object_np
 
-    def crop_image_and_bbox(self, image_name, width, height, overlap):
+    def change_np_array_to_object_list(self, object_np):
+        object_list = []
+        for li in object_np:
+            li = li.tolist()
+            # array to list and num to str
+            li = [str(l) for l in li]
+            object_dict = {}
+            object_dict['object_box']=li[0:8]
+            object_dict['object_class'] = str(li[-1])
+            object_dict['object_name'] = self.class_list[int(li[-1])]
+            object_list.append(object_dict)
+        return object_list
+
+    def crop_image_and_bbox(self, image_name, width, height, overlap, object_list, sub_image_dir, sub_label_dir):
         image_path = os.path.join(self.source_image_dir, image_name)
         image_np = cv2.imread(image_path)
         image_shape= image_np.shape
         image_height = image_shape[0]
         image_width = image_shape[1]
-        sub_image_step = weight - overlap
+        sub_image_step = width - overlap
+        object_np = self.change_object_list_to_np_array(object_list)
+        print('object:np', object_np)
 
         for start_h in range(0, image_height, sub_image_step):
             for start_w in range(0, image_width, sub_image_step):
@@ -81,15 +120,57 @@ class Dataset(object):
                     start_w_new = image_width - width
                 top_left_row = max(start_h_new, 0)
                 top_left_col = max(start_w_new, 0)
-                bottom_right_row = min(start_h + height, shape[0])
-                bottom_right_col = min(start_w + width, shape[1])
-                subImage = image_np[top_left_row:bottom_right_row, top_left_col: bottom_right_col]
+                bottom_right_row = min(start_h + height, image_shape[0])
+                bottom_right_col = min(start_w + width, image_shape[1])
+                subImage = image_np[top_left_row:bottom_right_row, top_left_col: bottom_right_col,:]
+
+                boxes = copy.deepcopy(object_np)
+                box = np.zeros_like(object_np)
+
+                # compute the centure of box , if the centure is in the subimage ,fetech
+
+                box[:, 0] = boxes[:, 0] - top_left_col
+                box[:, 2] = boxes[:, 2] - top_left_col
+                box[:, 4] = boxes[:, 4] - top_left_col
+                box[:, 6] = boxes[:, 6] - top_left_col
+
+                box[:, 1] = boxes[:, 1] - top_left_row
+                box[:, 3] = boxes[:, 3] - top_left_row
+                box[:, 5] = boxes[:, 5] - top_left_row
+                box[:, 7] = boxes[:, 7] - top_left_row
+                box[:, 8] = boxes[:, 8]
+                center_y = 0.25 * (box[:, 1] + box[:, 3] + box[:, 5] + box[:, 7])
+                center_x = 0.25 * (box[:, 0] + box[:, 2] + box[:, 4] + box[:, 6])
+
+                cond1 = np.intersect1d(np.where(center_y[:] >= 0)[0], np.where(center_x[:] >= 0)[0])
+                cond2 = np.intersect1d(np.where(center_y[:] <= (bottom_right_row - top_left_row))[0],
+                                       np.where(center_x[:] <= (bottom_right_col - top_left_col))[0])
+
+                idx = np.intersect1d(cond1, cond2)
+
+                if len(idx) > 0:
+                    if subImage.shape[0] > 5 and subImage.shape[1] > 5:
+                        img = os.path.join(sub_image_dir,"%s_%04d_%04d.png" % (image_name[:-4], top_left_row, top_left_col))
+                        cv2.imwrite(img, subImage)
+
+                    xml_file_name = "%s_%04d_%04d.xml" % (image_name[:-4], top_left_row, top_left_col)
+                    # print(xml)
+                    object_box = self.change_np_array_to_object_list(box[idx, :])
+                    self.creat_xml(xml_file_name, object_box, sub_image_dir, sub_label_dir)
 
 
+    def creat_xml(self, xml_file_name, object_list, sub_image_dir=None, sub_label_dir=None):
+        if sub_label_dir is None:
+            xml_file_path = os.path.join(self.source_label_dir, xml_file_name)
+        else:
+            xml_file_path = os.path.join(sub_label_dir, xml_file_name)
 
-    def creat_xml(self, xml_file_name, object_list):
-        xml_file_path = os.path.join(self.dest_label_dir, xml_file_name)
-        image_file_path = os.path.join(self.source_image_dir, xml_file_name[:-3]+'png')
+        if sub_image_dir is None:
+            image_file_path = os.path.join(self.source_image_dir, xml_file_name[:-3]+'png')
+        else :
+            image_file_path = os.path.join(sub_image_dir,  xml_file_name[:-3]+'png')
+        print(image_file_path)
+
         if cv2.imread(image_file_path) is None:
             return
         image_shape = cv2.imread(image_file_path).shape
@@ -201,13 +282,9 @@ class Dataset(object):
 def main():
     source_image_dir = '/home/zoucg/new_disk/cv_project/tensorflow_project/R2CNN_Faster-RCNN_Tensorflow/dataset/DOTA/train/images'
     source_label_dir = '/home/zoucg/new_disk/cv_project/tensorflow_project/R2CNN_Faster-RCNN_Tensorflow/dataset/DOTA/train/labelTxt'
-    Dota = Dataset(source_image_dir, source_label_dir, './Annotation2')
-    Dota.txt2voc()
+    dota = Dataset(source_image_dir, source_label_dir, './Annotation2')
+    dota.crop('./JPEGS', './Annotations')
+    # Dota.txt2voc()
 
 if __name__ =='__main__':
-    print(cv2.imread('./1033536313.jpg').shape)
-    cla = ['124', 'sddd']
-    print(cla.index('124'))
-    cla.append(['1244']+['33'])
-    print(cla)
-
+  main()
