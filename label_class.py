@@ -1,3 +1,4 @@
+# python2.7
 import os
 import cv2
 import xml.dom.minidom
@@ -29,23 +30,21 @@ class Dataset(object):
         images = [image for image in images if image.endswith('png')]
         flag = 0
         for im in images:
-            print im
+            print(im)
             flag += 1
-            if flag >20:
-                break
+            # if flag > 20:
+            #     break
             print('crop{}'.format(im))
             label_path = os.path.join(self.source_label_dir, im[:-3]+'txt')
             object_list = self.get_label(label_path)
             self.crop_image_and_bbox(im, 1024, 1024, 256, object_list, new_image_dir, new_voc_dir)
-
-
 
     def txt2voc(self):
         """
         txt label change to xml label
         :return:
         """
-        label_files =  os.listdir(self.source_label_dir)
+        label_files = os.listdir(self.source_label_dir)
 
         for label_file in label_files:
             if label_file.endswith('txt'):
@@ -66,7 +65,7 @@ class Dataset(object):
 
         with open(label_file_path, 'rb') as lf:
             objects = lf.readlines()
-            for object in objects :
+            for object in objects:
                 object_dict = {}
                 if len(object.split(' '))==10:
                     object_bbox = object.split(' ')[0:8]
@@ -74,7 +73,7 @@ class Dataset(object):
                     object_class = object.split(' ')[9][:-2]
                     object_dict['object_box'] = object_bbox
                     object_dict['object_name'] = object_name
-                    object_dict['object_class'] = object_class
+                    object_dict['object_class'] = self.class_list.index(object_name)
                     object_list.append(object_dict)
         return object_list
 
@@ -93,19 +92,22 @@ class Dataset(object):
             # array to list and num to str
             li = [str(l) for l in li]
             object_dict = {}
-            object_dict['object_box']=li[0:8]
-            object_dict['object_class'] = str(li[-1])
+            object_dict['object_box'] = li[0:8]
+            object_dict['object_class'] = li[-1]
             object_dict['object_name'] = self.class_list[int(li[-1])]
+
             object_list.append(object_dict)
         return object_list
 
     def crop_image_and_bbox(self, image_name, width, height, overlap, object_list, sub_image_dir, sub_label_dir):
         image_path = os.path.join(self.source_image_dir, image_name)
         image_np = cv2.imread(image_path)
-        image_shape= image_np.shape
+        image_shape = image_np.shape
         image_height = image_shape[0]
         image_width = image_shape[1]
         sub_image_step = width - overlap
+        if len(object_list)==0:
+            return
         object_np = self.change_object_list_to_np_array(object_list)
         print('object:np', object_np)
 
@@ -122,7 +124,7 @@ class Dataset(object):
                 top_left_col = max(start_w_new, 0)
                 bottom_right_row = min(start_h + height, image_shape[0])
                 bottom_right_col = min(start_w + width, image_shape[1])
-                subImage = image_np[top_left_row:bottom_right_row, top_left_col: bottom_right_col,:]
+                subimage = image_np[top_left_row:bottom_right_row, top_left_col: bottom_right_col, :]
 
                 boxes = copy.deepcopy(object_np)
                 box = np.zeros_like(object_np)
@@ -149,25 +151,25 @@ class Dataset(object):
                 idx = np.intersect1d(cond1, cond2)
 
                 if len(idx) > 0:
-                    if subImage.shape[0] > 5 and subImage.shape[1] > 5:
-                        img = os.path.join(sub_image_dir,"%s_%04d_%04d.png" % (image_name[:-4], top_left_row, top_left_col))
-                        cv2.imwrite(img, subImage)
+                    if subimage.shape[0] > 5 and subimage.shape[1] > 5:
+                        img = os.path.join(sub_image_dir,"%s_%04d_%04d.png" % (image_name[:-4],
+                                                                               top_left_row, top_left_col))
+                        cv2.imwrite(img, subimage)
 
                     xml_file_name = "%s_%04d_%04d.xml" % (image_name[:-4], top_left_row, top_left_col)
                     # print(xml)
                     object_box = self.change_np_array_to_object_list(box[idx, :])
                     self.creat_xml(xml_file_name, object_box, sub_image_dir, sub_label_dir)
 
-
     def creat_xml(self, xml_file_name, object_list, sub_image_dir=None, sub_label_dir=None):
         if sub_label_dir is None:
-            xml_file_path = os.path.join(self.source_label_dir, xml_file_name)
+            xml_file_path = os.path.join(self.dest_label_dir, xml_file_name)
         else:
             xml_file_path = os.path.join(sub_label_dir, xml_file_name)
 
         if sub_image_dir is None:
             image_file_path = os.path.join(self.source_image_dir, xml_file_name[:-3]+'png')
-        else :
+        else:
             image_file_path = os.path.join(sub_image_dir,  xml_file_name[:-3]+'png')
         print(image_file_path)
 
@@ -243,7 +245,7 @@ class Dataset(object):
             node_diffcult.appendChild(doc.createTextNode('0'))
 
             node_bndbox = doc.createElement('bndbox')
-            node_x0= doc.createElement('x0')
+            node_x0 = doc.createElement('x0')
             node_x0.appendChild(doc.createTextNode(b['object_box'][0]))
             node_y0 = doc.createElement('y0')
             node_y0.appendChild(doc.createTextNode(b['object_box'][1]))
@@ -280,11 +282,16 @@ class Dataset(object):
             doc.writexml(xf, indent='\t', addindent='\t', newl='\n', encoding="utf-8")
 
 def main():
-    source_image_dir = '/home/zoucg/new_disk/cv_project/tensorflow_project/R2CNN_Faster-RCNN_Tensorflow/dataset/DOTA/train/images'
-    source_label_dir = '/home/zoucg/new_disk/cv_project/tensorflow_project/R2CNN_Faster-RCNN_Tensorflow/dataset/DOTA/train/labelTxt'
-    dota = Dataset(source_image_dir, source_label_dir, './Annotation2')
-    dota.crop('./JPEGS', './Annotations')
-    # Dota.txt2voc()
+    # source_image_dir = '/home/zoucg/new_disk/cv_project/tensorflow_project' \
+    #                    '/R2CNN_Faster-RCNN_Tensorflow/dataset/DOTA/train/images'
+    # source_label_dir = '/home/zoucg/new_disk/cv_project/tensorflow_project/' \
+    #                    'R2CNN_Faster-RCNN_Tensorflow/dataset/DOTA/train/labelTxt'
+
+    source_image_dir = '/home/zoucg/new_hhd/data/dota_dataset/val/images/images'
+    source_label_dir = '/home/zoucg/new_hhd/data/dota_dataset/val/labelTxt/labelTxt'
+    dota = Dataset(source_image_dir, source_label_dir, './Annotation4')
+    dota.crop('./val_JPEGimages', './val_Annotation_all')
+    # dota.txt2voc()
 
 if __name__ =='__main__':
   main()
