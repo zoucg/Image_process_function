@@ -146,11 +146,7 @@ class ImageProcess(object):
 if __name__=="__main__":
 
     my_data = ImageProcess('/home/zoucg/new_hhd', '/home/zoucg/new_hhd')
-    # images = my_data.get_all_images()
-    # my_data.crop(images, 1024, 1024, 256)
-    # image_data = imread("1033536313.jpg")
-    # print(type(image_data))
-    my_data.os_walk_images('/home/zoucg/new_hhd/ship', '/home/zoucg/new_hhd/sub_images_out' )
+    # my_data.os_walk_images('/home/zoucg/new_hhd/ship', '/home/zoucg/new_hhd/sub_images_out' )
 
 
 

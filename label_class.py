@@ -14,10 +14,11 @@ class Dataset(object):
         self.source_image_dir = source_image_dir
         self.source_label_dir = source_label_dir
         self.dest_label_dir = dest_label_dir
-        self.class_list = ['plane', 'baseball-diamond', 'bridge', 'ground-track-field',
-                           'small-vehicle', 'large-vehicle', 'ship', 'tennis-court',
-                           'basketball-court',  'storage-tank', 'soccer-ball-field',
-                           'roundabout', 'harbor', 'swimming-pool', 'helicopter']
+        # self.class_list = ['plane', 'baseball-diamond', 'bridge', 'ground-track-field',
+        #                    'small-vehicle', 'large-vehicle', 'ship', 'tennis-court',
+        #                    'basketball-court',  'storage-tank', 'soccer-ball-field',
+        #                    'roundabout', 'harbor', 'swimming-pool', 'helicopter']
+        self.class_list = ['ship']
 
     def crop(self, new_image_dir, new_voc_dir):
         if os.path.exists(new_image_dir) is False:
@@ -50,7 +51,9 @@ class Dataset(object):
             if label_file.endswith('txt'):
 
                 label_file_path = os.path.join(self.source_label_dir, label_file)
+                print(label_file_path)
                 object_list = self.get_label(label_file_path)
+                print object_list
                 xml_file_name = label_file[:-3] + 'xml'
                 self.creat_xml(xml_file_name, object_list)
 
@@ -66,11 +69,13 @@ class Dataset(object):
         with open(label_file_path, 'rb') as lf:
             objects = lf.readlines()
             for object in objects:
+                print((object.split(' ')[1]))
                 object_dict = {}
-                if len(object.split(' '))==10:
-                    object_bbox = object.split(' ')[0:8]
-                    object_name = object.split(' ')[8]
-                    object_class = object.split(' ')[9][:-2]
+                if len(object.split(' '))==11:
+                    object_bbox = object.split(' ')[1:9]
+                    object_name = object.split(' ')[9]
+                    object_class = object.split(' ')[10][:-2]
+                    print(object_class)
                     object_dict['object_box'] = object_bbox
                     object_dict['object_name'] = object_name
                     object_dict['object_class'] = self.class_list.index(object_name)
@@ -287,11 +292,11 @@ def main():
     # source_label_dir = '/home/zoucg/new_disk/cv_project/tensorflow_project/' \
     #                    'R2CNN_Faster-RCNN_Tensorflow/dataset/DOTA/train/labelTxt'
 
-    source_image_dir = '/home/zoucg/new_hhd/data/dota_dataset/val/images/images'
-    source_label_dir = '/home/zoucg/new_hhd/data/dota_dataset/val/labelTxt/labelTxt'
-    dota = Dataset(source_image_dir, source_label_dir, './Annotation4')
-    dota.crop('./val_JPEGimages', './val_Annotation_all')
-    # dota.txt2voc()
+    source_image_dir = '/home/zoucg/new_hhd/LABELED_SHIP/slected/ALL/all'
+    source_label_dir = '/home/zoucg/new_hhd/LABELED_SHIP/slected/ALL/txt'
+    dota = Dataset(source_image_dir, source_label_dir, '/home/zoucg/new_hhd/LABELED_SHIP/slected/ALL/Annotations')
+    # dota.crop('./val_JPEGimages', './val_Annotation_all')
+    dota.txt2voc()
 
 if __name__ =='__main__':
   main()
