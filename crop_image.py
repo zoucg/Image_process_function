@@ -8,6 +8,7 @@ import numpy as np
 from skimage.io import imread, imsave
 import skimage
 
+
 class ImageProcess(object):
     def __init__(self, source_image_dir=None, dest_image_dir=None):
         self.source_dir = source_image_dir
@@ -25,24 +26,28 @@ class ImageProcess(object):
 
     def os_walk_images(self, root_dir, expected_save_dir):
         i = 0
+        f = open(os.path.join(expected_save_dir, 'log.txt'), 'w')
+        f2 = open(os.path.join(expected_save_dir, 'log2.txt'), 'w')
+
         relative_paths = []
         for root, dirs, files in os.walk(root_dir):
             for file in files:
                 # print(file)
                 if (file.endswith('tif') or file.endswith('jpg') or file.endswith('png')):
-                    if file.split('_')[-1][:-4] in ['17', '18', '19']:
+                    if file.split('_')[-1][:-4] in ['18', '19']:
                         level = file.split('_')[-1][:-4]
                         relative_path = os.path.join(root, file)
                         i += 1
                         # if i<=264:
                         #     continue
-                        print(i, relative_path)
+                        print(i, relative_path, file=f)
+                        continue
                         try:
                             self.crop_image(relative_path, 1024, 1024, 256, i, level, expected_save_dir)
                         except MemoryError:
+                            print(i, relative_path, file=f2)
                             pass
                         continue
-
 
         print(len(relative_paths))
 
@@ -146,7 +151,7 @@ class ImageProcess(object):
 if __name__=="__main__":
 
     my_data = ImageProcess('/home/zoucg/new_hhd', '/home/zoucg/new_hhd')
-    # my_data.os_walk_images('/home/zoucg/new_hhd/ship', '/home/zoucg/new_hhd/sub_images_out' )
+    my_data.os_walk_images('/home/zoucg/new_hhd/ship', '/home/zoucg/new_hhd/sub_images_out1' )
 
 
 
