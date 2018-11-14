@@ -16,13 +16,6 @@ def make_list(dir, file,des_dir=None,dest_file=None):
         f1.writelines(trains)
 
 
-
-
-
-
-
-
-
 def main():
     make_list('./', 'train_box-300-GF2.txt','./voc/ImageSets/Main/','train.txt')
     make_list('./', 'val_box-300-GF2.txt','./voc/ImageSets/Main/','test.txt')

@@ -1,7 +1,7 @@
 import shutil
 import os
 
-class DATA(object):
+class DataProcess(object):
     def __init__(self, source_dir, dest_dir):
         if os.path.exists(dest_dir) is False:
             os.makedirs(dest_dir)
@@ -36,6 +36,7 @@ def split_end(x):
     return x.split('/')[-1]
 
 def allocate_file(soure_dir, dest_dir=None, num_sub_dir=None):
+    """"""
 
     f = open('log.txt', 'w')
     path_list = []
@@ -70,14 +71,7 @@ def allocate_file(soure_dir, dest_dir=None, num_sub_dir=None):
 
 
 
-
-
-
 def main():
-    # ship = DATA('/media/zoucg/TOSHIBA EXT/labeled_ship/part6', '/home/zoucg/new_hhd/LABELED_SHIP')
-    # ship = DATA('/home/zoucg/new_hhd/LABELED_SHIP/slected/part0', '/home/zoucg/new_hhd/LABELED_SHIP/slected/ALL')
-    # all_files = ship.get_all_flies('txt')
-    # ship.choose_withobject(all_files, 'all')
     allocate_file('/home/zoucg/new_hhd/sub_images_out1', dest_dir='/home/zoucg/new_hhd/out', num_sub_dir=9)
 
 
