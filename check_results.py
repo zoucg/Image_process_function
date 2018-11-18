@@ -11,14 +11,13 @@ class ResultsManger(object):
     def prase_result_file(self, file_path):
         with open(file_path, 'r') as f:
             objectlist = f.readlines()
-            print('objectlist',objectlist)
             if len(objectlist)==0:
                 return
 
             points_list = []
             for object in objectlist:
                 object = object.split(' ')
-                if len(object)!= 11:
+                if len(object) != 11:
                     continue
                 p0 = [int(object[1]), int(object[2])]
                 p1 = [int(object[3]), int(object[4])]
@@ -44,21 +43,23 @@ class ResultsManger(object):
         data = t.tm_mday
         hour = t.tm_hour
         min = t.tm_min
-        logpath = '/home/zoucg/new_hhd/log/log_{}_{}_{}.txt'.format(data, hour, min)
-        f = open(logpath, 'a')
+        logpath_right = '/home/zoucg/new_hhd/log/log_{}_{}_{}.txt'.format(data, hour, min)
+        logpath_wrong = '/home/zoucg/new_hhd/log/log_wrong_{}_{}_{}.txt'.format(data, hour, min)
+        f = open(logpath_right, 'a')
+        f1 = open(logpath_wrong, 'a')
+
         if os.path.exists(dest_dir) is False:
             os.makedirs(dest_dir)
         labels = os.listdir(self.source_label_dir)
         labels = (label for label in labels if label.endswith('txt'))
 
         for i, label in enumerate(labels):
-            if i<=1000:
-                continue
+            name = label[:-4]
             print(label)
             label_path = os.path.join(self.source_label_dir, label)
             points_list = self.prase_result_file(label_path)
             if points_list is None:
-                print(i, label_path, file=f)
+                print(i, name, file=f)
                 continue
             img_name = label[:-3] + 'png'
             img_path = os.path.join(self.source_img_dir, img_name)
@@ -66,17 +67,18 @@ class ResultsManger(object):
             img_dest_path = os.path.join(dest_dir, img_name)
             cv2.imwrite(img_dest_path, img)
 
-            print(i, img_path, file=f)
+            print(i, name, file=f1)
 
             if i >10000:
                 break
 
 
 def main():
-    source_img_dir = '/media/zoucg/Maxtor/8'
-    source_label_dir = '/media/zoucg/Maxtor/8'
+    source_img_dir = '/home/zoucg/new_hhd/labeled_ship_2th/5/img'
+    source_label_dir = '/home/zoucg/new_hhd/labeled_ship_2th/5/img'
     label_result = ResultsManger(source_img_dir, source_label_dir)
-    label_result.get_out_results('/home/zoucg/new_hhd/label_check4')
+    label_result.get_out_results('/home/zoucg/new_hhd/label_check5')
+
 
 if __name__=='__main__':
     main()

@@ -292,9 +292,10 @@ def main():
     # source_label_dir = '/home/zoucg/new_disk/cv_project/tensorflow_project/' \
     #                    'R2CNN_Faster-RCNN_Tensorflow/dataset/DOTA/train/labelTxt'
 
-    source_image_dir = '/home/zoucg/new_hhd/LABELED_SHIP/slected/ALL/all'
-    source_label_dir = '/home/zoucg/new_hhd/LABELED_SHIP/slected/ALL/txt'
-    dota = Dataset(source_image_dir, source_label_dir, '/home/zoucg/new_hhd/LABELED_SHIP/slected/ALL/Annotations')
+    source_image_dir = '/home/zoucg/new_hhd/exist_object/8'
+    source_label_dir = '/home/zoucg/new_hhd/exist_object/8'
+    dest_label_dir = '/home/zoucg/new_hhd/exist_object/8_xml'
+    dota = Dataset(source_image_dir, source_label_dir, dest_label_dir)
     # dota.crop('./val_JPEGimages', './val_Annotation_all')
     dota.txt2voc()
 

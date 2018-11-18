@@ -20,7 +20,7 @@ def get_all_files(dir_name):
 
     for root, paths, files in os.walk(label_path):
         i = 0
-        for file in  files:
+        for file in files:
             if file.endswith('txt'):
                 f = open(root+file, 'r+')
 
